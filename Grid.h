@@ -1,14 +1,9 @@
 #pragma once
 #include <vector>
-#include "Agent.h"
+//#include "Agent.h"
 #include "Roadrunner.h"
 #include "Coyote.h"
-
-struct Coordinates
-{
-	int row;
-	int col;
-};
+#include "CellFinder.h"
 
 class Grid
 {
@@ -18,14 +13,18 @@ public:
 	//User inputs the dimension of the grid, populatest the grid
 	//and displays it	
 	Grid();
-		
+
+	// Initializing 2D vector of Agent pointer
+	std::vector<std::vector<Agent*> > grid;
+
 private:
 	///////////////////////////
 	//	MEMBER VARIABLES	
 	///////////////////////////
 
-	// Initializing 2D vector of Agent pointer
-	std::vector<std::vector<Agent*> > grid;
+	
+	//to store the info of safe cells for coyote
+	std::vector<char> coyoteSafeCells;
 	
 	//size of the Grid Column
 	int gridCol;
@@ -67,7 +66,11 @@ private:
 	void startSimulation();
 
 	//stores the behaviour of agent for execution
-	void storeBehaveAgent(Agent* currentRoadRunner);
+	void executeMove(Agent* currentRoadRunner);
+
+	
+	
+	//finds and stores the safe cells for cyote
 
 	//stores the behaviour of agent for execution
 	//void executeBehaveAgent(Agent* currentRoadRunner);

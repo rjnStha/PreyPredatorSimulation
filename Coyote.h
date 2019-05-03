@@ -7,7 +7,7 @@ class Coyote : public Agent
 public:
 	//Constructor
 	//Calling the Agent's constructor 
-	Coyote(int x, int y) : Agent(x,y){}
+	Coyote(Coordinates coord) : Agent(coord), deathCount(0) {}
 	
 	// Returns the ASCII value of the agent
 	const char representASCII() { return 'C'; }
@@ -24,5 +24,5 @@ public:
 private:
 
 	//Number of consevutive steps without eating to death
-	int deathCount = 0;
+	int deathCount;
 };

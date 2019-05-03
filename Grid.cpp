@@ -1,9 +1,10 @@
 #include "Grid.h"
 #include <iostream>
 #include <stdlib.h>
-#include <time.h> 
-
-using namespace std;
+#include <time.h>
+#include <algorithm>
+#include <chrono>
+#include <thread>
 
 //Constructor
 //User inputs the dimension of the grid, populatest the grid
@@ -12,16 +13,14 @@ using namespace std;
 Grid::Grid()
 {
 	//prompt and user input for the size of the grid environment
-	cout << "Welcome to Cyote and Roadrunner Simulation" << endl;
-	cout << "Enter the column size of the grid: ";
-	cin >> gridCol;
-	cout << "Enter the row size of the grid: ";
-	cin >> gridRow;
+	std::cout << "Welcome to Cyote and Roadrunner Simulation" << std::endl;
+	std::cout << "Enter the column size of the grid: ";
+	std::cin >> gridCol;
+	std::cout << "Enter the row size of the grid: ";
+	std::cin >> gridRow;
 
-	////create a new grid
+	//create a new grid
 	newGrid();
-	//display the initial grid
-	displayGrid();
 	//start the simulation
 	startSimulation();
 }
@@ -43,31 +42,31 @@ void Grid::newGrid()
 	//seed the random generator for random distribution of agents
 	srand((unsigned int) time(NULL));
 
-	//initial number of roadrunner = average of num of col and row
-	int initNumRoadRunner = (gridCol+gridRow)/2;
-
-	//if less than ratio then just create one coyote
-	//initial number of coyote = num of roadrunner / ratio
+	//user input roadrunner and coyote number
+	int initNumRoadRunner;
 	int initNumCoyote;
-	if (initNumRoadRunner < RATIO_RR_C) initNumCoyote = 1;
-	else initNumCoyote = initNumRoadRunner* RATIO_RR_C;
+	std::cout << "Enter the number of roadrunners: ";
+	std::cin >> initNumRoadRunner;
+	std::cout << "Enter the number of coyotes: ";
+	std::cin >> initNumCoyote;
 
-	//Create the roadrunners 
+	//Place Roadrunners in random positions
 	while (initNumRoadRunner != 0) {
 		Coordinates coord = randomCoordinates();
 
 		//Create roadrunner in empty spot
-		if (grid[coord.row][coord.col] == NULL) {
+		if (grid[coord.currentRow][coord.currentCol] == NULL) {
 			initNumRoadRunner--;
 			breedAgent(ROADRUNNER, coord);
 		}
 	}
-	//Create the Cyotes
+
+	//Place Coyotes in random positions
 	while (initNumCoyote != 0) 	{
 		Coordinates coord = randomCoordinates();
 
 		//Create coyote in empty spot
-		if (grid[coord.row][coord.col] == NULL) {
+		if (grid[coord.currentRow][coord.currentCol] == NULL) {
 			initNumCoyote--;
 			breedAgent(COYOTE, coord);
 		}
@@ -79,8 +78,8 @@ void Grid::newGrid()
 //if count is 1, breeds per project specification
 void Grid::breedAgent(AgentType type, Coordinates coord) 
 {	
-	if (type == ROADRUNNER) { grid[coord.row][coord.col] = new Roadrunner(coord.row,coord.col); }
-	else if (type == COYOTE) { grid[coord.row][coord.col] = new Coyote(coord.row, coord.col);	}
+	if (type == ROADRUNNER) { grid[coord.currentRow][coord.currentCol] = new Roadrunner(coord); }
+	else if (type == COYOTE) { grid[coord.currentRow][coord.currentCol] = new Coyote(coord);	}
 }
 
 //returns random coordinates
@@ -91,9 +90,9 @@ Coordinates const Grid::randomCoordinates()
 	//temp coordinate
 	Coordinates temp;
 	//rowPosition = total positions % numColumns
-	temp.row = uniDirectCoord / gridCol;
+	temp.currentRow = uniDirectCoord / gridCol;
 	//rowPosition = total positions % numColumns
-	temp.col = uniDirectCoord - temp.row * gridCol;
+	temp.currentCol = uniDirectCoord - temp.currentRow * gridCol;
 	return temp;
 }
 
@@ -104,15 +103,15 @@ void const Grid::displayGrid()
 	int numRoadRunnner = 0;
 	int numCoyote = 0;
 
-	cout << "\n";
-
+	std::cout << "\n";
 	for (int i = 0; i < gridRow; i++) {
-		cout << "	";
+		std::cout << i<< "	";
 		for (int j = 0; j < gridCol; j++) {
 			if (grid[i][j] == NULL) {
-				cout << "-"<<" ";
+				std::cout << "-"<<" ";
 			}
 			else {
+				
 				if (grid[i][j]->getType() == COYOTE) {
 					//increase the num
 					numCoyote++;
@@ -121,91 +120,159 @@ void const Grid::displayGrid()
 					//increase the num
 					numRoadRunnner++;
 				}
-				cout << grid[i][j]->representASCII()<<" ";
-
+				std::cout << grid[i][j]->representASCII() << " ";
 			}
 		}
-		cout << "\n";
+		std::cout << "\n";
 	}
-	cout << "\n";
+	std::cout << "\n";
 
-	cout << "	ROADRUNNER: " << numRoadRunnner << " COYOTE: " << numCoyote << "\n\n";
+	std::cout << "	ROADRUNNER: " << numRoadRunnner << " COYOTE: " << numCoyote << "\n\n";
 }
 
 //starts the simulation
 void Grid::startSimulation() {
-
 	while (true) {
-		
-		char input;
-		cout << "Enter q to exit:";
-		cin >> input;
-		
-		if (input == 'q') break;
-
-		//loop through the grid and check for the
-		for (int row = 0; row < gridRow; row++) {
-			for (int col = 0; col < gridCol; col++) {
-				//Ignore the empty grid cells and execute the behaviour
-				if (grid[row][col] != NULL) { storeBehaveAgent(grid[row][col]); }
-			}
-		}
-
 		//display the grid
 		displayGrid();
+		system("PAUSE");
+
+		std::vector<Coordinates> nonEmptyPos;
+
+		//loop through the grid and find the agent occupied cells
+		for (int row = 0; row < gridRow; row++) {
+			for (int col = 0; col < gridCol; col++) {
+				//add the non empty grid cells to a vector
+				if (grid[row][col] != NULL) {
+					//set the move flag to false
+					grid[row][col]->setMove(false);
+					//add the position to the vector 
+					nonEmptyPos.push_back({ row,col }); 
+				}
+			}
+		}
+		//way to clear the screen
+		std::cout << std::string(50, '\n');
+		//required to display grid before and after execution of each agent
+		displayGrid();
+
+		//randomly shuffle the vector storing the non-empty positions
+		std::random_shuffle(nonEmptyPos.begin(), nonEmptyPos.end());
+		//execute the move for each agent in the list
+		for (Coordinates c : nonEmptyPos) { executeMove(grid[c.currentRow][c.currentCol]);}
+
+
 	}
 }
 
-//execute the behaviour of roadrunner
-void Grid::storeBehaveAgent(Agent* currentAgent) {
-	
-	//get the current position
-	int agentRow = currentAgent->getCurrentRow();
-	int agentCol = currentAgent->getCurrentCol();
+//executes the behaviour of the agent
+void Grid::executeMove(Agent* currentAgent)
+{
+	//check if the agent has moved -> true then return
+	if (currentAgent->hasMoved()) { return; }
+
+	//get the coordinates of the agent
+	Coordinates coord = currentAgent->getCoordinates();
 	//get the breed count 
 	int breedCount = currentAgent->getBreedCount();
-	
+
+	CellFinder cellFind(coord, grid);
+
 	if (currentAgent->getType() == ROADRUNNER) {
-		
+		//Find the optimum position for current agent to move
+		Coordinates newPos = cellFind.optimumRoadRunPosition();
+	
 		//Execute the coyotes's behaviour
-		/*
-		a. if roadrunner,
-			a.1.check all the four adjacent positions in the grid
-				a.1.1 if no cyote in adjacent cells move random 1 cell
-				a.1.2 else move optimum 1 to 2 cells minimizing the num of coyotes adj in next step
-			a.2.check for 3rd consecutive time step
-				a.2.1.yes->check for free adj cell
-					a.2.1.1. if found breedand reset the time step
-				a.2.2.no -> ++the time step
-		*/
+		//Set the new position to roadRunner
+		grid[newPos.currentRow][newPos.currentCol] = currentAgent;
+		//Set the current position to empty
+		grid[coord.currentRow][coord.currentCol] = NULL;
+		//update all the member varivales 
+		currentAgent->setCoordinates(newPos);
+		//set the move flag to true
+		currentAgent->setMove(true);
+				
+		//Algorithm Alert
+		//a.2. check for the 3rd cosecutive safe move by the roadrunner 
+		//	a.2.1. yes -> check for an an empty position to breed a new roadrunner
+		//	a.2.1 no -> ++breedCount 
+		if (breedCount == 3) {
+			std::vector<Coordinates> list = cellFind.BFS(newPos,false,false);
+			//OBSERVATION: ALways has an empty adjacent cell since the agent moves first then breeds
+			// leaving an empty cell to breed
+			if(!list.empty()) {
+				//breed a new Roadrunner
+				breedAgent(ROADRUNNER, list[0]);
+				//resetting the breed count
+				currentAgent->setBreedCount(0);
+			}
+		}
+		else currentAgent->setBreedCount(++breedCount);
+
+		//print the change in each agent's data
+		/*breedCount = currentAgent->getBreedCount();
+		std::cout << "\n\n";
+		std::cout << "ROADRUNNER AT:" << coord.currentRow << coord.currentCol << "\n";
+		std::cout << "Optimum cell:" << newPos.currentRow << newPos.currentCol << "\n";
+		std::cout << "BreedCount:" << breedCount << "\n";*/
 
 	}
 	else if (currentAgent->getType() == COYOTE) {
-
-		//base class pointer accessing the derived class member function with static casting
-		int coyoteDeathCount = static_cast<Coyote*>(currentAgent)->getDeathCount();
+		
+		//Find the optimum position for current agent to move
+		Coordinates newPos = cellFind.optimumCoyotePosition();
+		
+		//Check if the roadrunner was captured in new position
+		//Reset the death count 
+		//else increase the death count
+		if (grid[newPos.currentRow][newPos.currentCol] != NULL) { static_cast<Coyote*>(currentAgent)->setDeathCount(0);}
 
 		//Execute the Roadrunner's behaviour
-		/*
-		b. else if coyote,
-			b.1.check if there is roadrunner in the adjacent cell
-				b.1.1.yes->move to the cell
-				b.1.2.no->move to the random cell by 1
-			b.2.check for 8th consecutive time step
-				b.2.1.yes->check for free adj cell
-					b.2.1.1. if found breedand reset the time step
-				b.2.2.no -> ++the time step
-			b.3.check for 4th consecutive time step
-				b.3.1.yes->die
-				b.3.2.no -> ++the consecutive time step
-		*/
+		//Set the new position to roadRunner
+		grid[newPos.currentRow][newPos.currentCol] = currentAgent;
+		//Set the current position to empty
+		grid[coord.currentRow][coord.currentCol] = NULL;
+		//update all the member varivales 
+		currentAgent->setCoordinates(newPos);
+		//set the move flag to true
+		currentAgent->setMove(true);
+			
+		//Algorithm Alert
+		//b.2.check for 8th consecutive time step
+			//b.2.1.yes->check for free adj cell
+			//b.2.1.1. if found breed and reset the time step
+			//b.2.2.no -> ++the time step
+		coord = currentAgent->getCoordinates();
+		if (breedCount == 8) {
+			std::vector<Coordinates> list = cellFind.BFS(coord, false, false);
+			//Check if there atleast one empty cell adj to the coyote
+			if (!list.empty()) { 
+				breedAgent(COYOTE,list[0]);
+				currentAgent->setBreedCount(0);
+			}
+		
+		} else {currentAgent->setBreedCount(++breedCount);}
+		
+		//base class pointer accessing the derived class member function with static casting
+		int coyoteDeathCount = static_cast<Coyote*>(currentAgent)->getDeathCount();
+		
+		//Algorithm Alert
+		//b.3.check for 4th consecutive time step without capturing roadrunner
+		//	b.3.1.yes->die
+		//	b.3.2.no -> ++the consecutive time step
+		if (static_cast<Coyote*>(currentAgent)->getDeathCount() == 4) { grid[newPos.currentRow][newPos.currentCol] = NULL;}
+		else{ static_cast<Coyote*>(currentAgent)->setDeathCount(++coyoteDeathCount);}
+		
+		//print the change in each agent's data
+		/*breedCount = currentAgent->getBreedCount();
+		std::cout << "\n\n";
+		std::cout << "COYOTE AT:" << coord.currentRow << coord.currentCol << "\n";
+		std::cout << "optimum: " << newPos.currentRow << newPos.currentCol << "\n";
+		std::cout << "DeathCount:" << coyoteDeathCount << "\n";
+		std::cout << "BreedCount:" << breedCount << "\n";*/
+
 	}
 
+	//print the agent posiiton change in each agent
+	//displayGrid();
 }
-
-//
-////Checks if the given coordinates are in 
-//bool Organism::in_range(int xx, int yy)
-//{
-//	return (xx >= 0) && (xx < WORLDSIZE) && (yy >= 0) && (yy < WORLDSIZE);
-//}

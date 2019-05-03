@@ -2,12 +2,17 @@
 
 enum AgentType { COYOTE, ROADRUNNER};
 
+struct Coordinates
+{
+	int currentRow = -1, currentCol = -1;
+};
+
 class Agent
 {
 public:
 	//Constructor and Destructor 
 	Agent() {}
-	Agent(int x, int y) : currentRow(x), currentCol(y) {}
+	Agent(Coordinates coord) : coordinates(coord), breedCount(0), moved(false){}
 	virtual ~Agent() { }
 
 	// Returns the ASCII value of the agent
@@ -18,40 +23,33 @@ public:
 
 	//getters//
 
-	//get the current position
-	int getCurrentRow() { return currentRow; }
-	int getCurrentCol() { return currentCol; }
-
-	//get the next position
-	int getNextRow() { return nextRow; }
-	int getNextCol() { return nextCol; }
+	//get the coordinates of the agent
+	Coordinates getCoordinates() { return coordinates; }
 
 	//returns the breedCount
 	int getBreedCount() { return breedCount; }
 
+	//checks if the agent moved or not
+	bool hasMoved() { return moved; }
+
 	//setters//
 
-	//set the current position
-	void setCurrentRow(int row) { currentRow = row; }
-	void setCurrentCol(int col) { currentCol = col; }
-
-	//set the next position
-	void setNextRow(int row) { nextRow = row; }
-	void setNextCol(int col) { nextCol = col; }
+	//set the coordinates of the agent
+	void setCoordinates(Coordinates coord) { coordinates = coord; }
 
 	//sets the breed count
 	void setBreedCount(int newCount) { breedCount = newCount; }
+
+	//sets the moved variable
+	void setMove(bool hasMoved) { moved = hasMoved; }
 	
 protected:
-	//current position of the agent
-	int currentRow = 0;
-	int currentCol = 0;
-
-	//next position of the agent
-	int nextRow = 0;
-	int nextCol = 0;
+	//Coordniates of the agent enclosing both current and next position
+	Coordinates coordinates;
 
 	//Number of consecutive steps to breeding
 	int breedCount = 0;
-		
+	
+	//tracks if the agent moved for given time frame
+	bool moved = false;
 };

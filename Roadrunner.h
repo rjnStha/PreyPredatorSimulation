@@ -7,7 +7,7 @@ class Roadrunner : public Agent
 public:
 	//Constructor
 	//Calling the Agent's constructor 
-	Roadrunner(int x, int y) : Agent(x, y) {}
+	Roadrunner(Coordinates coord) : Agent(coord) {}
 
 	// Returns the ASCII value of the agent
 	const char representASCII() { return 'R'; }
